@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -28,5 +28,11 @@ export class AuthController {
         // Check if user exists (handled by database unique constraint usually, or check here)
         // For now rely on service/prisma error or simple flow
         return this.authService.register(body.email, body.password);
+    }
+
+    @Get('verify')
+    @ApiOperation({ summary: 'Verify user email' })
+    async verify(@Query('token') token: string) {
+        return this.authService.verifyEmail(token);
     }
 }

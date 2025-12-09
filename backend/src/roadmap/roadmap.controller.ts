@@ -1,5 +1,6 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, ForbiddenException } from '@nestjs/common';
 import { RoadmapService } from './roadmap.service';
+import { UsersService } from '../users/users.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { GenerateRoadmapDto } from './dto/generate-roadmap.dto';
 import { SaveRoadmapDto } from './dto/save-roadmap.dto';
@@ -10,7 +11,8 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class RoadmapController {
   constructor(
     private readonly roadmapService: RoadmapService,
-    private readonly geminiService: GeminiService
+    private readonly geminiService: GeminiService,
+    private readonly usersService: UsersService
   ) { }
 
   @Post('generate')
@@ -24,6 +26,12 @@ export class RoadmapController {
   @ApiOperation({ summary: 'Save a roadmap' })
   @ApiResponse({ status: 201, description: 'The roadmap has been successfully saved.' })
   async save(@Body() body: SaveRoadmapDto) {
+    // Check if user is verified
+    const user = await this.usersService.findById(body.userId);
+    if (!user || !user.isEmailVerified) {
+      throw new ForbiddenException({ error: "Please verify your email first before saving workflows. Check your inbox for the verification link." });
+    }
+
     return this.roadmapService.create({
       topic: body.topic,
       difficulty: body.difficulty,
