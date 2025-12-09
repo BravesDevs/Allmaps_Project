@@ -3,6 +3,9 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
+import * as fs from 'fs';
+import * as path from 'path';
+import mjml2html from 'mjml';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -63,17 +66,33 @@ export class AuthService {
                 isEmailVerified: false
             });
 
+
+
             // Send Email
             const host = this.configService.get<string>('APP_HOST');
             const port = this.configService.get<string>('PORT');
             const link = `http://${host}:${port}/auth/verify?token=${verificationTokenPlain}`;
+
+            // Read and compile MJML
+            const templatePath = path.join(process.cwd(), 'src/auth/templates/verification.mjml');
+            let template = fs.readFileSync(templatePath, 'utf8');
+
+            // Basic customized replacement (for robust templating use handlebars, but simple replace works here)
+            // Note: MJML must be compiled AFTER replacement if structure depends on data, but usually data is just text.
+            // Better: Compile first then replace in HTML to avoid breaking MJML syntax, OR replace in MJML then compile.
+            // Replacing in MJML is safer for layout if variables are just text.
+            template = template.replace('{{name}}', 'Explorer'); // We don't have name field yet, default to Explorer
+            template = template.replace(/{{verificationLink}}/g, link);
+
+            const mjmlOutput = mjml2html(template);
+
             try {
                 await this.transporter.sendMail({
                     from: '"Allmaps" <noreply@allmaps.com>',
                     to: email,
-                    subject: 'Verify Your Email for Allmaps',
+                    subject: '🚀 Verify Your Allmaps Email – Start Mapping!',
                     text: `Please verify your email by clicking on the following link: ${link}`,
-                    html: `<p>Please verify your email by clicking on the following link: <a href="${link}">Click here to verify your email</a></p>`
+                    html: mjmlOutput.html
                 });
                 this.logger.log(`Verification email sent to ${email}`);
             } catch (emailError) {
