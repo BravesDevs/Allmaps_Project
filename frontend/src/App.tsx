@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, CssBaseline, AppBar, Toolbar, Typography, Button, Snackbar, Alert, IconButton, Tooltip, Fade, Drawer } from '@mui/material';
+import { Box, CssBaseline, AppBar, Toolbar, Typography, Button, Snackbar, Alert, IconButton, Tooltip, Drawer } from '@mui/material';
 import { Sidebar } from './components/Sidebar';
 import { SearchHeader } from './components/SearchHeader';
 import { RoadmapCanvas } from './components/RoadmapCanvas';

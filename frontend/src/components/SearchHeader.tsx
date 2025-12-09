@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, TextField, Select, MenuItem, Button, FormControl, InputLabel, Paper, Typography } from '@mui/material';
+import { Box, TextField, Select, MenuItem, Button, FormControl, Paper, Typography } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 interface SearchHeaderProps {
