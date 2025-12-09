@@ -25,7 +25,8 @@ export class GeminiService {
   async generateRoadmap(topic: string, difficulty: string) {
     const prompt = `
       Generate a learning roadmap for "${topic}" at "${difficulty}" level.
-      Return a STRICT JSON object (no markdown formatting) with the following structure:
+      Return a STRICT JSON object (no markdown formatting, no code blocks, no key assignment like "type":="val").
+      The structure must be exactly:
       {
         "nodes": [
           {

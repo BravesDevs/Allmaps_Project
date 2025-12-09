@@ -4,6 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
 
+import { ConfigService } from '@nestjs/config';
+
 @Injectable()
 export class AuthService {
     private readonly logger = new Logger(AuthService.name);
@@ -11,19 +13,22 @@ export class AuthService {
 
     constructor(
         private usersService: UsersService,
-        private jwtService: JwtService
+        private jwtService: JwtService,
+        private configService: ConfigService
     ) {
-        // Initialize Nodemailer transporter (assuming config is ready or just use a placeholder/ethereal for now)
-        // Since no config is provided in env for mail, I'll log or try to use a default.
-        // For 'assumption' that it works, I will create a transporter that might fail but catch it.
-        // Actually, to make it work on localhost without creds, we might need a real SMTP or a mock.
-        // I'll set up a transporter but heavily try-catch the send.
+        const mailHost = this.configService.get<string>('MAIL_HOST');
+        const mailPort = this.configService.get<number>('MAIL_PORT') || 587;
+        const mailUser = this.configService.get<string>('MAIL_USER');
+
+        this.logger.log(`Initializing Nodemailer with Host: ${mailHost}, Port: ${mailPort}, User: ${mailUser}`);
+
         this.transporter = nodemailer.createTransport({
-            host: process.env.MAIL_HOST || 'smtp.ethereal.email',
-            port: parseInt(process.env.MAIL_PORT || '587'),
+            host: mailHost,
+            port: mailPort,
+            secure: false, // true for 465, false for other ports
             auth: {
-                user: process.env.MAIL_USER || 'ethereal_user',
-                pass: process.env.MAIL_PASS || 'ethereal_pass'
+                user: mailUser,
+                pass: this.configService.get<string>('MAIL_PASS')
             }
         });
     }
@@ -59,7 +64,9 @@ export class AuthService {
             });
 
             // Send Email
-            const link = `http://${process.env.APP_HOST}:${process.env.PORT}/auth/verify?token=${verificationTokenPlain}`;
+            const host = this.configService.get<string>('APP_HOST');
+            const port = this.configService.get<string>('PORT');
+            const link = `http://${host}:${port}/auth/verify?token=${verificationTokenPlain}`;
             try {
                 await this.transporter.sendMail({
                     from: '"Allmaps" <noreply@allmaps.com>',
@@ -77,6 +84,9 @@ export class AuthService {
             return { message: "Account created! Please check your email to verify your account.", user: { id: newUser.id, email: newUser.email } };
 
         } catch (error) {
+            if (error.code === 'P2002') {
+                throw new BadRequestException('Email already exists');
+            }
             this.logger.error('Registration failed', error);
             throw error;
         }
